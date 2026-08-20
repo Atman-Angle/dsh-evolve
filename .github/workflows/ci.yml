@@ -16,6 +16,8 @@ jobs:
         with:
           repository: deepseek-ai/deepseek-harness
           path: deepseek-harness
+      - name: Place DSH dependency beside plugin
+        run: cp -R deepseek-harness ../deepseek-harness
       - uses: pnpm/action-setup@v4
         with:
           version: 10
