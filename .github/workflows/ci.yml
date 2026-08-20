@@ -16,8 +16,8 @@ jobs:
         with:
           repository: deepseek-ai/deepseek-harness
           path: deepseek-harness
-      - name: Place DSH dependency beside plugin
-        run: cp -R deepseek-harness ../deepseek-harness
+      - name: Verify sibling DSH source checkout
+        run: test -d deepseek-harness/vendor/cordis && test -d deepseek-harness/packages/core/session
       - uses: pnpm/action-setup@v4
         with:
           version: 10
@@ -29,6 +29,9 @@ jobs:
       - name: Install
         working-directory: dsh-evolve
         run: pnpm install --frozen-lockfile
+      - name: Build DSH library packages
+        working-directory: deepseek-harness
+        run: pnpm install --frozen-lockfile && pnpm build:lib
       - name: Verify
         working-directory: dsh-evolve
         run: pnpm typecheck && pnpm build && pnpm test
