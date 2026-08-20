@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: dsh-evolve
+      - uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          path: deepseek-harness
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.19.x
+          cache: pnpm
+          cache-dependency-path: dsh-evolve/pnpm-lock.yaml
+      - name: Install
+        working-directory: dsh-evolve
+        run: pnpm install --frozen-lockfile
+      - name: Verify
+        working-directory: dsh-evolve
+        run: pnpm typecheck && pnpm build && pnpm test

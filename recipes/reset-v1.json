@@ -1,0 +1,26 @@
+{
+  "id": "reset-v1",
+  "version": "1.0.0",
+  "detector": {
+    "windowSize": 6,
+    "consecutiveFailures": { "threshold": 3, "weight": 0.35 },
+    "repeatedActions": { "threshold": 3, "weight": 0.25, "noveltyDiscount": 0.5 },
+    "repeatedErrors": { "threshold": 2, "weight": 0.25 },
+    "noNovelObservation": { "threshold": 4, "weight": 0.15 },
+    "workspaceChange": { "enabled": false, "threshold": 5, "weight": 0.15 },
+    "triggerScore": 0.65
+  },
+  "intervention": {
+    "type": "strategy-reset",
+    "enabled": true,
+    "cooldownSteps": 5,
+    "maxPerTurn": 1,
+    "maxPerSession": 3,
+    "messageTemplate": "The current execution trajectory appears to be producing little new progress.\n\nDo not continue the same approach automatically.\n\nBefore taking the next action:\n1. summarize only the concrete facts established so far,\n2. identify the assumption or strategy that has failed,\n3. explicitly abandon that approach,\n4. choose a materially different next strategy,\n5. continue execution.\n\nDo not repeat previous tool calls unless the environment or relevant state has changed."
+  },
+  "metadata": {
+    "createdAt": "2026-01-01T00:00:00Z",
+    "sourceExperiment": "manual-candidate-01",
+    "compatibleDshVersion": "0.x"
+  }
+}

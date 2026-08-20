@@ -1,0 +1,13 @@
+node_modules/
+lib/
+*.tsbuildinfo
+reports/runs/
+reports/evals/
+.dsh/
+.env
+
+# Local portfolio prototype, unrelated to the DSH plugin package.
+index.html
+css/
+js/
+README.portfolio.backup.md

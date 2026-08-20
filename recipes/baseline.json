@@ -1,0 +1,25 @@
+{
+  "id": "baseline",
+  "version": "1.0.0",
+  "detector": {
+    "windowSize": 6,
+    "consecutiveFailures": { "threshold": 3, "weight": 0.35 },
+    "repeatedActions": { "threshold": 3, "weight": 0.25, "noveltyDiscount": 0.5 },
+    "repeatedErrors": { "threshold": 2, "weight": 0.25 },
+    "noNovelObservation": { "threshold": 4, "weight": 0.15 },
+    "workspaceChange": { "enabled": false, "threshold": 5, "weight": 0.15 },
+    "triggerScore": 0.65
+  },
+  "intervention": {
+    "type": "strategy-reset",
+    "enabled": false,
+    "cooldownSteps": 5,
+    "maxPerTurn": 1,
+    "maxPerSession": 3
+  },
+  "metadata": {
+    "createdAt": "2026-01-01T00:00:00Z",
+    "sourceExperiment": "baseline-control",
+    "compatibleDshVersion": "0.x"
+  }
+}

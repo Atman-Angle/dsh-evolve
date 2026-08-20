@@ -1,0 +1,29 @@
+{
+  "_comment": "dsh-evolve eval 任务集。运行：dsh-evolve eval --tasks tasks/example.tasks.json --profile eval-baseline --arm baseline --runs 3",
+  "tasks": [
+    {
+      "id": "parser-fix-01",
+      "title": "修复 parser 括号平衡检测",
+      "fixture": "tasks/parser-fix-01/workspace",
+      "prompt": "tasks/parser-fix-01/prompt.md",
+      "constraints": { "maxSteps": 60, "maxTokensOutput": 200000 },
+      "grader": { "commands": ["node check.js"] }
+    },
+    {
+      "id": "string-escape-fix-02",
+      "title": "修复字符串转义实现",
+      "fixture": "tasks/string-escape-fix-02/workspace",
+      "prompt": "tasks/string-escape-fix-02/prompt.md",
+      "constraints": { "maxSteps": 60, "maxTokensOutput": 200000 },
+      "grader": { "commands": ["node check.js"] }
+    },
+    {
+      "id": "dead-code-refactor-03",
+      "title": "移除死代码并保持行为不变",
+      "fixture": "tasks/dead-code-refactor-03/workspace",
+      "prompt": "tasks/dead-code-refactor-03/prompt.md",
+      "constraints": { "maxSteps": 60, "maxTokensOutput": 200000 },
+      "grader": { "commands": ["node check.js"] }
+    }
+  ]
+}

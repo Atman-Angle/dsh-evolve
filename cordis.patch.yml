@@ -1,0 +1,16 @@
+# dsh-evolve bundle patch layer.
+#
+# Inserts the dsh-evolve plugin row into any profile that stacks this bundle.
+# The row is mounted beside the official agent loop; removing the bundle (or
+# disabling this row) restores stock DeepSeek Harness behavior — the plugin
+# never modifies core, the loop, or the durable session schema.
+
+- insert:
+    - id: dsh-evolve
+      name: dsh-evolve
+      config:
+        enabled: true
+        # Candidate runtime policy: 'baseline' (observe-only control) or
+        # 'reset-v1' (strategy reset enabled). Override per profile/arm via a
+        # later patch layer.
+        recipe: reset-v1
