@@ -3,11 +3,22 @@ lib/
 *.tsbuildinfo
 reports/runs/
 reports/evals/
+reports/audit/
 .dsh/
 .env
+.env.*
+!.env.example
 
 # Local portfolio prototype, unrelated to the DSH plugin package.
 index.html
 css/
 js/
 README.portfolio.backup.md
+
+# Historical planning / investigation notes are kept locally only.
+docs/dsh-runtime-analysis.md
+docs/experiment-design.md
+docs/mvp-plan.md
+docs/release-audit-v0.2.md
+docs/spec-v0.2.md
+docs/security/privilege-audit.md

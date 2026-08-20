@@ -1,20 +1,27 @@
 # dsh-evolve
 
-> Evidence-driven runtime evolution for DeepSeek Harness.
+> 面向 DeepSeek Harness 的本地执行经验插件。
 
 [![CI](https://github.com/Atman-Angle/dsh-evolve/actions/workflows/ci.yml/badge.svg)](https://github.com/Atman-Angle/dsh-evolve/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-`dsh-evolve` 是一个可拆卸的 DeepSeek Harness 插件：它观察 Agent 的执行轨迹，从重复失败、用户纠正和成功流程中提炼经验，再生成可验证、可审批、可回滚的优化提案。
+`dsh-evolve` 旁挂在 DSH Agent Loop 之外：它记录重复失败、用户纠正与成功路径；可选地在 Session 结束后提炼本地 Experience，并为后续相似任务提供有界、临时的经验摘要。它不训练模型、不修改 DSH Core，也不接管 Sandbox、Approval 或凭据。
 
-它不替换 Agent Loop，不修改 DSH Core，也不接管工具、沙箱或权限系统。
+## 功能与边界
 
-## 安装
+- 用确定性信号识别重复错误、重复工具调用和无进展轨迹；`reset-v1` recipe 可注入一次通用 `STRATEGY_RESET`。
+- 可选经验侧车在后台挖掘 correction、successful-procedure 与 failure-pattern；主 Agent 路径不等待。
+- 普通 Experience 默认只保存、检索和临时提供；只有显式 Skill 蒸馏和用户确认才能产生或激活 Skill。
+- 经验检索按相关性、置信度和兼容性过滤，最多返回 3 条；任务结束后不保留为常驻上下文。
+- 原始 Session、Prompt、工具输出和本地数据不会自动上传；Commons 同步默认关闭。
 
-本插件面向 DeepSeek Harness 的源码插件环境。将两个仓库放在同级目录，
-然后在本仓库执行 `pnpm install`、`pnpm build`，再按 DSH 的插件配置加载
-`dsh-evolve`。当前 DSH 的核心包使用本地 workspace 依赖，CI 也会自动检出
-`deepseek-ai/deepseek-harness` 作为同级目录。
+## 前提条件
+
+- Node.js `>=22.19`
+- pnpm 10
+- 可运行的 DeepSeek Harness profile
+
+当前项目使用 DSH 源码 workspace 依赖进行开发，因此将两个仓库放在同一目录下：
 
 ```text
 workspace/
@@ -22,71 +29,97 @@ workspace/
   dsh-evolve/
 ```
 
-完整开发和贡献说明见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-## 它做什么
-
-```text
-Session events
-    -> deterministic stuck detection
-    -> experience mining
-    -> mutation proposal
-    -> replay / shadow / approval
-    -> memory, profile, skill or policy update
+```powershell
+git clone https://github.com/deepseek-ai/deepseek-harness.git
+git clone https://github.com/Atman-Angle/dsh-evolve.git
+Set-Location .\dsh-evolve
+pnpm install
+pnpm build
 ```
 
-- 在线检测重复失败、重复工具调用和无新进展轨迹，必要时注入 `STRATEGY_RESET`。
-- Session 结束后异步提炼 Experience；普通 correction/procedure 默认只保存在本地经验库。
-- Skill、Context、Tool 和 Runtime Policy 只生成候选提案，必须经过明确用户确认；支持验证和回滚。
-- 相关经验最多临时提供 1-3 条，任务结束后清理，不写入常驻 System Prompt。
-- 后台任务使用有界持久队列、重试上限和熔断器，不阻塞主 Agent。
-- 原始 Session 保留在本地；可分享内容必须先经过隐私和 Secret 检查。
-- Commons 同步默认关闭，开启后远程内容也只会校验、下载和本地验证，不会自动信任或执行。
+## 安装到 DSH Profile
 
-## 安全边界
+先在 `dsh-evolve` 根目录完成构建，然后把本地 checkout 加入目标 profile：
 
-任何模式下都不会自动：
+```powershell
+dsh plugin --profile <profile-name> add .
+```
 
-- 读取凭据或上传原始 Session、Prompt、源码
-- 关闭 Sandbox 或绕过 Approval
-- 安装第三方插件或执行社区代码
-- 获取凭据、扩大系统权限
-- 自动应用生成代码或插件
+例如：
 
-插件与 DSH 运行在同一进程内，因此它不是安全沙箱。只安装可信插件。详见 [docs/security-model.md](docs/security-model.md)。
+```powershell
+dsh plugin --profile web add .
+```
 
-## 风险门禁
+该包声明了 `cordis.patch.yml`，DSH 会将 `dsh-evolve` 插件行加入 profile。卸载时执行：
 
-| 风险 | 典型目标 | 门禁 |
-| ---: | --- | --- |
-| 0-1 | Memory、Preference、Skill routing | 静默记录/可见候选 |
-| 2 | Recipe | Shadow |
-| 3 | Skill | 显式蒸馏 + 人工确认 |
-| 4-5 | Context、Tool、Runtime policy | Eval / Shadow / Rollback |
-| 6 | 生成代码或插件 | 永不自动 |
+```powershell
+dsh plugin --profile <profile-name> remove dsh-evolve
+```
 
-## 当前状态
+## 配置
 
-项目处于 `v0.1.0` 开源准备阶段，尚未发布到 npm。仓库当前通过源码构建并挂载到本地 DSH profile；Node.js 要求 `>=22.19`。
+默认 bundle 使用 `reset-v1`：检测到明确的卡住轨迹时，最多按 recipe 的冷却与总量限制注入通用策略重置。若只想观察，不注入，请在 profile 的后续 Cordis patch 中覆盖为：
 
-已验证内容包括：
+```yaml
+- id: dsh-evolve
+  config:
+    recipe: baseline
+```
 
-- `pnpm typecheck`、`pnpm build`
-- 218 个测试全部通过
-- 发布审计 10/10 PASS
-- 非干扰、故障隔离、隐私对抗和生命周期审计通过
-- Session 结束后的挖掘任务支持快照恢复，任务依赖按顺序执行
+Experience 挖掘侧车只有在显式提供 `evolution` 配置时才启用。下面是最小的本地经验配置：
 
-审计报告见 [reports/audit/latest.md](reports/audit/latest.md)。
+```yaml
+- id: dsh-evolve
+  config:
+    evolution:
+      enabled: true
+      mining: true
+      routing: true
+      skillInjection: false
+      commons:
+        enabled: false
+```
 
-## 文档
+常用开关：
 
-- [使用指南](docs/usage-guide.md)
-- [v0.2 规范](docs/spec-v0.2.md)
-- [架构设计](docs/architecture.md)
-- [安全模型](docs/security-model.md)
-- [发布审计](docs/release-audit-v0.2.md)
+| 配置 | 默认值 | 作用 |
+| --- | --- | --- |
+| `recipe` | `reset-v1` | `baseline` 只记录；`reset-v1` 可注入策略重置。 |
+| `evolution.enabled` | `true` | 启用或关闭经验侧车。 |
+| `evolution.mining` | `true` | 在 Session 结束后挖掘本地 Experience。 |
+| `evolution.routing` | `true` | 记录已激活 Skill 的任务匹配结果。 |
+| `evolution.skillInjection` | `false` | 仅在已激活 Skill 场景下允许注入其说明。 |
+| `evolution.commons.enabled` | `false` | 启用 Commons 缓存同步；不会自动信任或激活远端内容。 |
+
+## 日常使用与诊断
+
+插件装载后无需每个任务手动操作。它在 Session 结束后将数据写到 DSH evolve 根目录（默认由 DSH_HOME/用户目录解析；也可通过 `storageRoot` 覆盖）。可用 CLI 检查本地状态：
+
+```powershell
+dsh-evolve status
+dsh-evolve experience list
+dsh-evolve mutations list
+dsh-evolve audit --all
+dsh-evolve benchmark
+```
+
+对可能改变未来行为的内容，先查看提案与证据，再显式确认；不要把普通 Experience 当作自动生效的 Skill 或策略。
+
+## 数据与安全
+
+本插件不会自动读取凭据、关闭 Sandbox、绕过 Approval、安装第三方插件、执行社区代码或上传原始 Session。它与 DSH 运行在同一进程内，不是安全沙箱，请只安装可信插件。详细模型见 [安全模型](docs/security-model.md)。
+
+## 开发与验证
+
+```powershell
+pnpm typecheck
+pnpm build
+pnpm test
+```
+
+项目导出 Cordis 插件入口、经验检索器、存储层、验证流程和离线 CLI。开发约定见 [CONTRIBUTING.md](CONTRIBUTING.md)，设计边界见 [开发规范](docs/development-spec.md) 与 [架构](docs/architecture.md)。
 
 ## License
 
-`package.json` 已声明 MIT。公开仓库前请补充根目录 `LICENSE` 文件。
+[MIT](LICENSE)
